@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Switchboard Dashboard</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary-bg: #0f172a;
+            --secondary-bg: #1e293b;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+            --accent-purple: #8b5cf6;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --card-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--primary-bg), var(--secondary-bg));
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid var(--card-border);
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-section {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .time-display {
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+            font-family: 'Courier New', monospace;
+        }
+
+        .date-display {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        .power-display {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+            border-radius: 16px;
+            margin: 30px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .power-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            100% { left: 100%; }
+        }
+
+        .power-value {
+            font-size: 4.5rem;
+            font-weight: 800;
+            color: var(--accent-blue);
+            line-height: 1;
+            margin: 10px 0;
+        }
+
+        .feature-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .feature-tab {
+            background: rgba(59, 130, 246, 0.1);
+            border: 2px solid var(--accent-blue);
+            color: var(--accent-blue);
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            white-space: nowrap;
+        }
+
+        .feature-tab:hover {
+            background: var(--accent-blue);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .feature-tab.active {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .feature-section {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .feature-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Device Card Styling */
+        .device-card {
+            height: 100%;
+        }
+
+        .device-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .device-icon {
+            font-size: 2rem;
+            color: var(--accent-blue);
+        }
+
+        .device-status {
+            font-size: 0.9rem;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .status-on {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--accent-green);
+            border: 1px solid var(--accent-green);
+        }
+
+        .status-off {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--accent-red);
+            border: 1px solid var(--accent-red);
+        }
+
+        .device-info {
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-label {
+            color: var(--text-secondary);
+        }
+
+        .info-value {
+            font-weight: 600;
+        }
+
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .toggle-label {
+            font-weight: 600;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #64748b;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background: linear-gradient(90deg, var(--accent-green), #34d399);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
+
+        /* Bulk Controls */
+        .bulk-controls {
+            margin-bottom: 30px;
+        }
+
+        .control-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: 2px solid;
+            background: transparent;
+            color: var(--text-primary);
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-on {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .btn-on:hover {
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .btn-off {
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .btn-off:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .btn-optimize {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .btn-optimize:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        /* Leaderboard */
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .leaderboard-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .leaderboard-rank {
+            font-size: 1.5rem;
+            font-weight: 800;
+            width: 40px;
+            text-align: center;
+        }
+
+        .rank-1 { color: #fbbf24; }
+        .rank-2 { color: #d1d5db; }
+        .rank-3 { color: #f97316; }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            z-index: 9999;
+            animation: slideInRight 0.3s ease;
+            max-width: 300px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .notification.success {
+            border-left: 4px solid var(--accent-green);
+        }
+
+        .notification.error {
+            border-left: 4px solid var(--accent-red);
+        }
+
+        .notification.info {
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .fade-out {
+            animation: fadeOut 0.3s ease forwards;
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+        }
+
+        /* Budget Alert */
+        .budget-alert {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+            border: 2px solid var(--accent-red);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        /* Charts */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        /* Loading Animation */
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading-spinner {
+            font-size: 2rem;
+            color: var(--accent-blue);
+            margin-bottom: 10px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .time-display {
+                font-size: 2rem;
+            }
+            
+            .power-value {
+                font-size: 3rem;
+            }
+            
+            .feature-tabs {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+            }
+            
+            .feature-tab {
+                padding: 10px 16px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="header-section">
+            <h1 class="mb-3">
+                <i class="fas fa-bolt me-2" style="color: var(--accent-blue);"></i>
+                Smart Switchboard Dashboard
+            </h1>
+            <p class="text-muted mb-4">Advanced Energy Management with AI & Gamification</p>
+            
+            <div class="time-display" id="liveTime">--:--:--</div>
+            <div class="date-display" id="liveDate">-- --- ----</div>
+        </div>
+
+        <!-- Feature Tabs -->
+        <div class="feature-tabs">
+            <button class="feature-tab active" onclick="showFeature('devices')">
+                <i class="fas fa-plug"></i> Devices
+            </button>
+            <button class="feature-tab" onclick="showFeature('game')">
+                <i class="fas fa-trophy"></i> Energy Game
+            </button>
+            <button class="feature-tab" onclick="showFeature('budget')">
+                <i class="fas fa-wallet"></i> Budget & Carbon
+            </button>
+            <button class="feature-tab" onclick="showFeature('ai')">
+                <i class="fas fa-brain"></i> AI Insights
+            </button>
+            <button class="feature-tab" onclick="showFeature('analytics')">
+                <i class="fas fa-chart-line"></i> Analytics
+            </button>
+        </div>
+
+        <!-- Power Display -->
+        <div class="glass-card power-display">
+            <h3><i class="fas fa-bolt me-2"></i>Current Power Usage</h3>
+            <div class="power-value" id="totalPower">0 W</div>
+            <p class="text-muted mb-0">Last updated: <span id="lastUpdated">--:--:--</span></p>
+        </div>
+
+        <!-- Budget Alert Banner -->
+        <div class="budget-alert" id="budgetAlert" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-1"><i class="fas fa-exclamation-triangle me-2"></i>Budget Alert!</h5>
+                    <p class="mb-0" id="budgetAlertMessage"></p>
+                </div>
+                <button class="btn btn-outline-light" onclick="optimizeEnergy()">
+                    <i class="fas fa-magic me-2"></i> Optimize Now
+                </button>
+            </div>
+        </div>
+
+        <!-- Bulk Controls -->
+        <div class="bulk-controls">
+            <div class="glass-card">
+                <h5 class="mb-3"><i class="fas fa-sliders-h me-2"></i>Quick Controls</h5>
+                <div class="row g-3">
+                    <div class="col-md-3 col-6">
+                        <button class="control-btn btn-on" onclick="toggleAllDevices(true)">
+                            <i class="fas fa-power-on me-2"></i>Turn All ON
+                        </button>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <button class="control-btn btn-off" onclick="toggleAllDevices(false)">
+                            <i class="fas fa-power-off me-2"></i>Turn All OFF
+                        </button>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <button class="control-btn btn-optimize" onclick="optimizeEnergy()">
+                            <i class="fas fa-magic me-2"></i>AI Optimize
+                        </button>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <button class="control-btn" style="border-color: var(--accent-purple); color: var(--accent-purple);" 
+                                onclick="simulateUsage()">
+                            <i class="fas fa-random me-2"></i>Simulate Usage
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Devices Section -->
+        <div class="feature-section active" id="devicesSection">
+            <div class="row" id="devicesContainer">
+                <div class="col-12">
+                    <div class="glass-card loading">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner"></i>
+                        </div>
+                        <p>Loading devices...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Energy Game Section -->
+        <div class="feature-section" id="gameSection">
+            <div class="row">
+                <div class="col-lg-8 mb-4">
+                    <div class="glass-card">
+                        <h4 class="mb-4"><i class="fas fa-trophy me-2"></i>Family Energy Challenge</h4>
+                        <div id="leaderboardContainer">
+                            <div class="loading">
+                                <div class="loading-spinner">
+                                    <i class="fas fa-spinner"></i>
+                                </div>
+                                <p>Loading leaderboard...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 mb-4">
+                    <div class="glass-card">
+                        <h4 class="mb-4"><i class="fas fa-medal me-2"></i>Weekly Champion</h4>
+                        <div class="text-center py-4" id="championContainer">
+                            <i class="fas fa-crown fa-4x mb-3" style="color: #fbbf24;"></i>
+                            <h3 id="championName">Loading...</h3>
+                            <p class="text-muted" id="championScore">Score: --</p>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-card mt-4">
+                        <h4 class="mb-4"><i class="fas fa-star me-2"></i>Achievements</h4>
+                        <div id="achievementsContainer">
+                            <div class="loading">
+                                <div class="loading-spinner">
+                                    <i class="fas fa-spinner"></i>
+                                </div>
+                                <p>Loading achievements...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Budget & Carbon Section -->
+        <div class="feature-section" id="budgetSection">
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="glass-card">
+                        <h4 class="mb-4"><i class="fas fa-wallet me-2"></i>Budget Management</h4>
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Monthly Budget:</span>
+                                <span class="fw-bold" id="monthlyBudget">₹0</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Projected Bill:</span>
+                                <span class="fw-bold" id="projectedBill">₹0</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3">
+                                <span class="text-muted">Daily Budget:</span>
+                                <span class="fw-bold" id="dailyBudget">₹0</span>
+                            </div>
+                            
+                            <div class="progress mb-3" style="height: 20px; background: rgba(255, 255, 255, 0.1);">
+                                <div id="budgetProgress" class="progress-bar" role="progressbar" 
+                                     style="width: 0%; background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));">
+                                </div>
+                            </div>
+                            
+                            <div class="text-center" id="budgetStatusText"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="glass-card" style="border: 2px solid var(--accent-green);">
+                        <h4 class="mb-4"><i class="fas fa-leaf me-2"></i>Environmental Impact</h4>
+                        <div class="text-center">
+                            <div class="display-4 fw-bold mb-3" id="carbonSaved">0</div>
+                            <p class="mb-1">kg CO₂ saved today</p>
+                            <p class="text-muted small" id="carbonEquivalents">Equivalent to planting 0 trees</p>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-card mt-4">
+                        <h4 class="mb-4"><i class="fas fa-lightbulb me-2"></i>Energy Saving Tips</h4>
+                        <div id="energyTips">
+                            <div class="loading">
+                                <div class="loading-spinner">
+                                    <i class="fas fa-spinner"></i>
+                                </div>
+                                <p>Loading tips...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Insights Section -->
+        <div class="feature-section" id="aiSection">
+            <div class="row">
+                <div class="col-lg-8 mb-4">
+                    <div class="glass-card">
+                        <h4 class="mb-4"><i class="fas fa-brain me-2"></i>AI Energy Insights</h4>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <div class="glass-card">
+                                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Anomalies Detected</h5>
+                                    <div class="display-3 fw-bold text-center my-3" id="anomalyCount">0</div>
+                                    <p class="text-center text-muted">Power usage irregularities</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="glass-card">
+                                    <h5><i class="fas fa-chart-line me-2"></i>Next Hour Prediction</h5>
+                                    <div class="display-3 fw-bold text-center my-3" id="nextHourPrediction">0</div>
+                                    <p class="text-center text-muted">Predicted power usage (W)</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <canvas id="powerChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 mb-4">
+                    <div class="glass-card">
+                        <h4 class="mb-4"><i class="fas fa-shield-alt me-2"></i>System Health</h4>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Power Stability:</span>
+                                <span class="badge bg-success" id="powerStability">Stable</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Device Health:</span>
+                                <span id="deviceHealthScore">100%</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Active Devices:</span>
+                                <span id="activeDevicesCount">0/7</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-card mt-4">
+                        <h4 class="mb-4"><i class="fas fa-robot me-2"></i>AI Actions</h4>
+                        <div>
+                            <button class="btn btn-outline-light w-100 mb-3" onclick="runAIAnalysis()">
+                                <i class="fas fa-search me-2"></i>Run Deep Analysis
+                            </button>
+                            <button class="btn btn-outline-light w-100 mb-3" onclick="generateReport()">
+                                <i class="fas fa-file-alt me-2"></i>Generate AI Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Section -->
+        <div class="feature-section" id="analyticsSection">
+            <div class="row">
+                <div class="col-lg-8 mb-4">
+                    <div class="glass-card">
+                        <h4 class="mb-4"><i class="fas fa-chart-bar me-2"></i>Energy Usage Analytics</h4>
+                        <div class="chart-container">
+                            <canvas id="usageChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 mb-4">
+                    <div class="glass-card">
+                        <h4 class="mb-4"><i class="fas fa-chart-pie me-2"></i>Device Distribution</h4>
+                        <div class="chart-container">
+                            <canvas id="distributionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    <div class="glass-card">
+                        <h4 class="mb-4"><i class="fas fa-history me-2"></i>Recent Activity</h4>
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Device</th>
+                                        <th>Action</th>
+                                        <th>Power</th>
+                                        <th>Owner</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="activityLog">
+                                    <tr>
+                                        <td colspan="5" class="text-center">Loading activity log...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <script>
+    // Global variables
+    let currentFeature = 'devices';
+    let powerChart = null;
+    let usageChart = null;
+    let distributionChart = null;
+    let refreshInterval;
+    let powerHistory = [];
+    let chartLabels = [];
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateClock();
+        loadAllData();
+        initCharts();
+        
+        // Set up intervals
+        setInterval(updateClock, 1000);
+        refreshInterval = setInterval(loadAllData, 3000);
+    });
+
+    // Update real-time clock
+    function updateClock() {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('en-IN', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        document.getElementById('liveTime').textContent = timeStr;
+        
+        const dateStr = now.toLocaleDateString('en-IN', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        document.getElementById('liveDate').textContent = dateStr;
+    }
+
+    // Initialize charts
+    function initCharts() {
+        // Power Chart
+        const powerCtx = document.getElementById('powerChart').getContext('2d');
+        powerChart = new Chart(powerCtx, {
+            type: 'line',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    label: 'Power Usage (W)',
+                    data: powerHistory,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+
+        // Usage Chart
+        const usageCtx = document.getElementById('usageChart').getContext('2d');
+        usageChart = new Chart(usageCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Energy Usage (kWh)',
+                    data: [12, 19, 8, 15, 22, 18, 14],
+                    backgroundColor: 'rgba(139, 92, 246, 0.6)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        // Distribution Chart
+        const distCtx = document.getElementById('distributionChart').getContext('2d');
+        distributionChart = new Chart(distCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Lights', 'HVAC', 'Kitchen', 'Entertainment', 'Office', 'Laundry'],
+                datasets: [{
+                    data: [15, 35, 25, 10, 10, 5],
+                    backgroundColor: [
+                        '#3b82f6', '#10b981', '#f59e0b', 
+                        '#ef4444', '#8b5cf6', '#6366f1'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
+
+    // Show feature section
+    function showFeature(feature) {
+        // Update active tab
+        document.querySelectorAll('.feature-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        event.target.classList.add('active');
+        
+        // Hide all sections
+        document.querySelectorAll('.feature-section').forEach(section => {
+            section.classList.remove('active');
+        });
+        
+        // Show selected section
+        document.getElementById(feature + 'Section').classList.add('active');
+        currentFeature = feature;
+        
+        // Load specific data
+        if (feature === 'game') loadGameStats();
+        if (feature === 'budget') loadBudgetData();
+        if (feature === 'ai') loadAIData();
+        if (feature === 'analytics') loadAnalyticsData();
+    }
+
+    // Load all data
+    async function loadAllData() {
+        try {
+            const response = await axios.get('/api/devices');
+            updateDashboard(response.data);
+            updatePowerChart(response.data.total_power);
+            
+            // Update last updated time
+            const now = new Date();
+            document.getElementById('lastUpdated').textContent = 
+                now.toLocaleTimeString('en-IN', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                
+        } catch (error) {
+            console.error('Error loading data:', error);
+            showNotification('Failed to load data from server', 'error');
+        }
+    }
+
+    // Update dashboard with device data
+    function updateDashboard(data) {
+        // Update total power
+        document.getElementById('totalPower').textContent = `${data.total_power} W`;
+        
+        // Update devices
+        updateDevices(data.devices);
+        
+        // Update system status
+        updateSystemStats(data);
+    }
+
+    // Update devices display
+    function updateDevices(devices) {
+        let html = '';
+        
+        Object.entries(devices).forEach(([name, info]) => {
+            const displayName = name.replace(/_/g, ' ').toUpperCase();
+            const health = info.health || 5;
+            const healthStars = '★'.repeat(health);
+            const lastUsed = info.last_used ? new Date(info.last_used).toLocaleTimeString() : 'Never';
+            
+            html += `
+            <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+                <div class="glass-card device-card">
+                    <div class="device-header">
+                        <div>
+                            <i class="fas fa-${getDeviceIcon(name)} device-icon"></i>
+                            <h5 class="d-inline ms-2">${displayName}</h5>
+                        </div>
+                        <div class="device-status ${info.state ? 'status-on' : 'status-off'}">
+                            ${info.state ? 'ON' : 'OFF'}
+                        </div>
+                    </div>
+                    
+                    <div class="device-info">
+                        <div class="info-row">
+                            <span class="info-label">Power:</span>
+                            <span class="info-value">${info.power}W</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Health:</span>
+                            <span class="info-value">${healthStars}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Owner:</span>
+                            <span class="info-value">${info.owner}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Category:</span>
+                            <span class="info-value">${info.category}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Last Used:</span>
+                            <span class="info-value">${lastUsed}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="toggle-container">
+                        <span class="toggle-label">${info.state ? 'Device is ON' : 'Device is OFF'}</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" ${info.state ? 'checked' : ''} 
+                                   onchange="toggleDevice('${name}')">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>`;
+        });
+        
+        document.getElementById('devicesContainer').innerHTML = html || `
+            <div class="col-12">
+                <div class="glass-card text-center p-5">
+                    <i class="fas fa-exclamation-triangle fa-3x mb-3 text-warning"></i>
+                    <p>No devices found</p>
+                </div>
+            </div>`;
+    }
+
+    // Get device icon
+    function getDeviceIcon(deviceName) {
+        const icons = {
+            'lights': 'lightbulb',
+            'hvac': 'fan',
+            'oven': 'fire',
+            'refrigerator': 'snowflake',
+            'tv': 'tv',
+            'computer': 'desktop',
+            'washing_machine': 'tshirt'
+        };
+        return icons[deviceName] || 'plug';
+    }
+
+    // Toggle device
+    async function toggleDevice(device) {
+        const checkbox = event.target;
+        const originalState = checkbox.checked;
+        
+        try {
+            const response = await axios.post('/api/toggle', { device });
+            
+            if (response.data.success) {
+                // Update UI immediately
+                const deviceCard = checkbox.closest('.device-card');
+                const statusSpan = deviceCard.querySelector('.device-status');
+                const toggleLabel = deviceCard.querySelector('.toggle-label');
+                
+                if (response.data.new_state) {
+                    statusSpan.className = 'device-status status-on';
+                    statusSpan.textContent = 'ON';
+                    toggleLabel.textContent = 'Device is ON';
+                    showNotification(`${device.replace(/_/g, ' ').toUpperCase()} turned ON`, 'success');
+                } else {
+                    statusSpan.className = 'device-status status-off';
+                    statusSpan.textContent = 'OFF';
+                    toggleLabel.textContent = 'Device is OFF';
+                    showNotification(`${device.replace(/_/g, ' ').toUpperCase()} turned OFF - Energy saved!`, 'success');
+                }
+                
+                // Update total power
+                setTimeout(loadAllData, 500);
+            } else {
+                // Revert checkbox state
+                checkbox.checked = !originalState;
+                showNotification(`Failed to toggle ${device}`, 'error');
+            }
+        } catch (error) {
+            // Revert checkbox state
+            checkbox.checked = !originalState;
+            showNotification(`Error toggling ${device}`, 'error');
+            console.error('Toggle error:', error);
+        }
+    }
+
+    // Toggle all devices
+    async function toggleAllDevices(state) {
+        if (!state && !confirm('Are you sure you want to turn ALL devices OFF?')) {
+            return;
+        }
+        
+        try {
+            const response = await axios.post('/api/toggle_all', { state });
+            
+            if (response.data.success) {
+                showNotification(`All devices turned ${state ? 'ON' : 'OFF'}`, 'success');
+                loadAllData();
+            }
+        } catch (error) {
+            showNotification('Failed to control devices', 'error');
+        }
+    }
+
+    // Optimize energy
+    async function optimizeEnergy() {
+        try {
+            const response = await axios.post('/api/optimize');
+            showNotification(response.data.message, 'success');
+            loadAllData();
+        } catch (error) {
+            showNotification('Failed to optimize energy', 'error');
+        }
+    }
+
+    // Simulate usage
+    async function simulateUsage() {
+        try {
+            const response = await axios.post('/api/simulate_usage');
+            showNotification('Usage simulation completed', 'info');
+            loadAllData();
+        } catch (error) {
+            showNotification('Failed to simulate usage', 'error');
+        }
+    }
+
+    // Load game stats
+    async function loadGameStats() {
+        try {
+            const response = await axios.get('/api/game_stats');
+            const data = response.data;
+            
+            // Update leaderboard
+            let leaderboardHtml = '';
+            data.leaderboard.forEach((item, index) => {
+                const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '';
+                leaderboardHtml += `
+                <div class="leaderboard-item">
+                    <div class="leaderboard-rank ${rankClass}">${index + 1}</div>
+                    <div class="ms-3 flex-grow-1">
+                        <h5 class="mb-1">${item.member.toUpperCase()}</h5>
+                        <small class="text-muted">Level ${item.level}</small>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold">${item.score} pts</div>
+                        <small class="text-muted">${item.usage}W usage</small>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('leaderboardContainer').innerHTML = leaderboardHtml;
+            
+            // Update champion
+            document.getElementById('championName').textContent = 
+                (data.weekly_champion || 'None').toUpperCase();
+            document.getElementById('championScore').textContent = 
+                `Score: ${data.champion_score || 0}`;
+            
+            // Update achievements
+            let achievementsHtml = '';
+            Object.entries(data.achievements || {}).forEach(([member, memberAchievements]) => {
+                if (memberAchievements && memberAchievements.length > 0) {
+                    achievementsHtml += `<h6 class="mt-3">${member.toUpperCase()}</h6>`;
+                    memberAchievements.forEach(achievement => {
+                        achievementsHtml += `<span class="badge bg-primary me-1 mb-1">${achievement}</span>`;
+                    });
+                }
+            });
+            document.getElementById('achievementsContainer').innerHTML = achievementsHtml || 
+                '<p class="text-muted">No achievements yet</p>';
+                
+        } catch (error) {
+            console.error('Error loading game stats:', error);
+        }
+    }
+
+    // Load budget data
+    async function loadBudgetData() {
+        try {
+            const [budgetRes, carbonRes] = await Promise.all([
+                axios.get('/api/budget'),
+                axios.get('/api/carbon')
+            ]);
+            
+            const budgetData = budgetRes.data;
+            const carbonData = carbonRes.data;
+            
+            // Update budget values
+            document.getElementById('monthlyBudget').textContent = `₹${budgetData.monthly_budget}`;
+            document.getElementById('projectedBill').textContent = `₹${budgetData.projected_bill.toFixed(2)}`;
+            document.getElementById('dailyBudget').textContent = `₹${budgetData.daily_budget.toFixed(2)}`;
+            
+            // Update progress bar
+            const progressPercent = Math.min(100, (budgetData.projected_bill / budgetData.monthly_budget) * 100);
+            document.getElementById('budgetProgress').style.width = `${progressPercent}%`;
+            
+            // Update status text
+            const statusText = document.getElementById('budgetStatusText');
+            if (progressPercent > 90) {
+                statusText.innerHTML = '<span class="text-danger">⚠️ Exceeding Budget!</span>';
+            } else if (progressPercent > 70) {
+                statusText.innerHTML = '<span class="text-warning">⚠️ Approaching Limit</span>';
+            } else {
+                statusText.innerHTML = '<span class="text-success">✅ Within Budget</span>';
+            }
+            
+            // Show/hide alert banner
+            const alertBanner = document.getElementById('budgetAlert');
+            if (budgetData.budget_warning) {
+                alertBanner.style.display = 'block';
+                document.getElementById('budgetAlertMessage').textContent = 
+                    `Projected bill (₹${budgetData.projected_bill.toFixed(2)}) exceeds budget threshold`;
+            } else {
+                alertBanner.style.display = 'none';
+            }
+            
+            // Update carbon data
+            document.getElementById('carbonSaved').textContent = carbonData.saved_today_kg.toFixed(2);
+            document.getElementById('carbonEquivalents').textContent = 
+                `Equivalent to planting ${carbonData.equivalents.trees.toFixed(1)} trees`;
+            
+            // Update energy tips
+            const tips = [
+                "💡 Use LED bulbs - they use 75% less energy",
+                "❄️ Set AC to 24°C - each degree saves 3-5% energy",
+                "🔌 Unplug chargers when not in use",
+                "☀️ Use natural light during daytime",
+                "🔄 Run full loads in washing machine"
+            ];
+            
+            let tipsHtml = '<div class="row">';
+            tips.forEach(tip => {
+                tipsHtml += `<div class="col-12 mb-2"><i class="fas fa-lightbulb me-2 text-warning"></i>${tip}</div>`;
+            });
+            tipsHtml += '</div>';
+            document.getElementById('energyTips').innerHTML = tipsHtml;
+            
+        } catch (error) {
+            console.error('Error loading budget data:', error);
+        }
+    }
+
+    // Load AI data
+    async function loadAIData() {
+        try {
+            const response = await axios.get('/api/ai_insights');
+            const data = response.data;
+            
+            document.getElementById('anomalyCount').textContent = data.anomalies_detected;
+            document.getElementById('nextHourPrediction').textContent = Math.round(data.next_hour_prediction);
+            
+            const stabilityBadge = document.getElementById('powerStability');
+            if (data.power_stability === 'stable') {
+                stabilityBadge.className = 'badge bg-success';
+                stabilityBadge.textContent = 'Stable';
+            } else {
+                stabilityBadge.className = 'badge bg-danger';
+                stabilityBadge.textContent = 'Unstable';
+            }
+            
+        } catch (error) {
+            console.error('Error loading AI data:', error);
+        }
+    }
+
+    // Load analytics data
+    async function loadAnalyticsData() {
+        // This would load historical analytics data
+        // For now, we'll just update the activity log
+        try {
+            const response = await axios.get('/api/devices');
+            const data = response.data;
+            
+            // Update activity log
+            let activityHtml = '';
+            if (data.history && data.history.length > 0) {
+                data.history.slice(-10).reverse().forEach(item => {
+                    activityHtml += `
+                    <tr>
+                        <td>${new Date(item.time).toLocaleTimeString()}</td>
+                        <td>${item.device}</td>
+                        <td><span class="${item.state ? 'status-on' : 'status-off'}">${item.state ? 'ON' : 'OFF'}</span></td>
+                        <td>${data.devices[item.device]?.power || 0}W</td>
+                        <td>${data.devices[item.device]?.owner || 'Family'}</td>
+                    </tr>`;
+                });
+            } else {
+                activityHtml = '<tr><td colspan="5" class="text-center">No recent activity</td></tr>';
+            }
+            document.getElementById('activityLog').innerHTML = activityHtml;
+            
+        } catch (error) {
+            console.error('Error loading analytics data:', error);
+        }
+    }
+
+    // Update system stats
+    function updateSystemStats(data) {
+        // Calculate active devices
+        const activeDevices = Object.values(data.devices).filter(d => d.state).length;
+        const totalDevices = Object.keys(data.devices).length;
+        document.getElementById('activeDevicesCount').textContent = `${activeDevices}/${totalDevices}`;
+        
+        // Calculate average health
+        const avgHealth = Object.values(data.devices).reduce((sum, d) => sum + (d.health || 5), 0) / totalDevices;
+        document.getElementById('deviceHealthScore').textContent = `${Math.round((avgHealth / 5) * 100)}%`;
+    }
+
+    // Update power chart
+    function updatePowerChart(currentPower) {
+        const now = new Date();
+        const timeLabel = now.toLocaleTimeString('en-IN', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        // Add to history
+        powerHistory.push(currentPower);
+        chartLabels.push(timeLabel);
+        
+        // Keep only last 20 points
+        if (powerHistory.length > 20) {
+            powerHistory.shift();
+            chartLabels.shift();
+        }
+        
+        // Update chart
+        if (powerChart) {
+            powerChart.data.datasets[0].data = powerHistory;
+            powerChart.data.labels = chartLabels;
+            powerChart.update();
+        }
+    }
+
+    // Show notification
+    function showNotification(message, type = 'info') {
+        const container = document.getElementById('notificationContainer');
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        container.appendChild(notification);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.classList.add('fade-out');
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        }, 3000);
+    }
+
+    // Run AI analysis
+    async function runAIAnalysis() {
+        showNotification('Running deep AI analysis...', 'info');
+        // In a real implementation, this would trigger server-side analysis
+    }
+
+    // Generate report
+    async function generateReport() {
+        showNotification('Generating comprehensive AI report...', 'info');
+        // In a real implementation, this would generate and send a report
+    }
+
+    // Feature-specific data loading
+    window.addEventListener('load', function() {
+        // Load all data initially
+        loadAllData();
+        loadGameStats();
+        loadBudgetData();
+        loadAIData();
+        loadAnalyticsData();
+    });
+    </script>
+</body>
+</html>
